@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeekdayWork", "WeekdayWork\WeekdayWork.csproj", "{FFD0D000-FA50-4C28-A72D-3C7A601FB06E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Persistence", "Persistence\Persistence.csproj", "{8A0B3438-998B-40BF-B932-959F0FA6D161}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpreadsheetSupport", "SpreadsheetSupport\SpreadsheetSupport.csproj", "{5A7A46EC-893C-42F1-8DA0-31BD15DC64BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpicorIntegrationService", "EpicorIntegrationService\EpicorIntegrationService.csproj", "{372694CD-7001-4EAF-8212-D11EA6A41F71}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeekendWork", "WeekendWork\WeekendWork.csproj", "{5D655ABA-D409-4FED-81D4-4CDE2CC74806}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CredentialManager", "CredentialManager\CredentialManager.csproj", "{C4F8A2E3-1B5D-4E7A-9C3F-2D0E6B8A4C1E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FFD0D000-FA50-4C28-A72D-3C7A601FB06E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFD0D000-FA50-4C28-A72D-3C7A601FB06E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFD0D000-FA50-4C28-A72D-3C7A601FB06E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFD0D000-FA50-4C28-A72D-3C7A601FB06E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A0B3438-998B-40BF-B932-959F0FA6D161}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A0B3438-998B-40BF-B932-959F0FA6D161}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A0B3438-998B-40BF-B932-959F0FA6D161}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A0B3438-998B-40BF-B932-959F0FA6D161}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A7A46EC-893C-42F1-8DA0-31BD15DC64BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A7A46EC-893C-42F1-8DA0-31BD15DC64BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A7A46EC-893C-42F1-8DA0-31BD15DC64BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A7A46EC-893C-42F1-8DA0-31BD15DC64BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{372694CD-7001-4EAF-8212-D11EA6A41F71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{372694CD-7001-4EAF-8212-D11EA6A41F71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{372694CD-7001-4EAF-8212-D11EA6A41F71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{372694CD-7001-4EAF-8212-D11EA6A41F71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D655ABA-D409-4FED-81D4-4CDE2CC74806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D655ABA-D409-4FED-81D4-4CDE2CC74806}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D655ABA-D409-4FED-81D4-4CDE2CC74806}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D655ABA-D409-4FED-81D4-4CDE2CC74806}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4F8A2E3-1B5D-4E7A-9C3F-2D0E6B8A4C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4F8A2E3-1B5D-4E7A-9C3F-2D0E6B8A4C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4F8A2E3-1B5D-4E7A-9C3F-2D0E6B8A4C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4F8A2E3-1B5D-4E7A-9C3F-2D0E6B8A4C1E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7CBA80A2-C010-4F9C-88A1-4F5095BEA272}
+	EndGlobalSection
+EndGlobal

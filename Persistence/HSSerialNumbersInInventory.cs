@@ -1,0 +1,22 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Data;
+
+using Ice.Core;
+using Erp.BO;
+using Erp.Proxy.BO;
+using Ice.Lib.Framework;
+using Ice.Adapters;
+using Ice.BO;
+using HorizonScientific;
+using System.IO;
+using SpreadsheetLight;
+using SpreadsheetLight.Charts;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Erp.Tablesets;
+using Ice.Lib.Customization.Dialogs;
+using Erp.Common.ContractInterfaces;
