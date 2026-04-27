@@ -116,6 +116,8 @@ namespace HorizonScientific
         public static string QUERY_LIST_ALL_RESOURCE_GROUPS = @"ListAllResourceGroups";
         public static string QUERY_LIST_ALL_RESOURCES = @"ListAllResources";
 
+        public static string QUERY_LIST_ALL_UNFIRM_JOBS = @"ListAllUnfirmJobs";
+
         public static string QUERY_LIST_ALL_JOB_MATERIALS = @"ListAllJobMaterials";
         public static string QUERY_LIST_ALL_JOB_OPERATIONS = @"ListAllJobOperations";
         public static string QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS = @"JobOpsEstVsActualCosts";

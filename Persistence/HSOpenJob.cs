@@ -1,5 +1,11 @@
 ﻿using Epicor.Utilities;
+using Erp.Contracts;
+using Erp.Proxy.BO;
+using Erp.Tablesets;
 using HorizonScientific;
+using Ice.BO;
+using Ice.Core;
+using Ice.Lib.Framework;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -354,5 +360,103 @@ namespace HorizonScientific
         private List<HSOpenJob> m_oRelatedJobs = new List<HSOpenJob>();
 
         #endregion
+    }
+
+    public class HSUnfirmJob
+    {
+        #region Constructors
+
+        public HSUnfirmJob(DataRow oRow)
+        {
+            if ((oRow["JobHead_Company"] != DBNull.Value) && (string.IsNullOrEmpty((string)oRow["JobHead_Company"]) == false))
+            {
+                m_sCompany = (string)oRow["JobHead_Company"];
+            }
+            if ((oRow["JobHead_JobNum"] != DBNull.Value) && (string.IsNullOrEmpty((string)oRow["JobHead_JobNum"]) == false))
+            {
+                m_sJobNum = (string)oRow["JobHead_JobNum"];
+            }
+        }
+        #endregion
+
+        #region Methods
+        #endregion
+
+        #region Properties
+
+        public string Company
+        {
+            get { return m_sCompany; }
+        }
+        public string JobNum
+        {
+            get { return m_sJobNum; }
+        }
+        #endregion
+
+        #region Data Members
+        private string m_sCompany;
+        private string m_sJobNum;
+        #endregion
+    }
+
+    public class HSFixUnfirmJobs
+    {
+        #region Constructors 
+        public HSFixUnfirmJobs(Session oSession)
+        {
+            // get the list of unfirm jobs
+            // get a list of all materials for open jobs
+            m_oUnfirmJobs = new List<HSUnfirmJob>();
+            Ice.Proxy.BO.DynamicQueryImpl oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
+            QueryExecutionDataSet oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_LIST_ALL_UNFIRM_JOBS);
+            oQueryExecutionDataSet.Clear();
+            oQueryExecutionDataSet.AcceptChanges();
+            DataSet oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_LIST_ALL_UNFIRM_JOBS, oQueryExecutionDataSet);
+            foreach (DataRow oRow in oDataSet.Tables[0].Rows)
+            {
+                HSUnfirmJob oUnfirmJob = new HSUnfirmJob(oRow);
+                m_oUnfirmJobs.Add(oUnfirmJob);
+            }
+        }
+        #endregion
+
+        #region Methods
+        public void FirmJobs(Session oSession)
+        {
+            foreach (HSUnfirmJob oUnfirmJob in m_oUnfirmJobs)
+            {
+                JobEntryImpl oJobEntryImpl = WCFServiceSupport.CreateImpl<JobEntryImpl>(oSession, Erp.Proxy.BO.JobEntryImpl.UriPath);
+
+                // Get dataset
+                Erp.BO.JobEntryDataSet oJobEntryDataSet = oJobEntryImpl.GetByID(oUnfirmJob.JobNum);
+                if (oJobEntryDataSet != null)
+                {
+                    if (oJobEntryDataSet.JobHead.Count == 1)
+                    {
+                        Erp.BO.JobEntryDataSet.JobHeadRow oJobHeadRow = oJobEntryDataSet.JobHead[0];
+
+                        oJobHeadRow.BeginEdit();
+                        oJobHeadRow.JobFirm = true;
+                        string sJobComment = oJobHeadRow.CommentText;
+                        sJobComment += "\nAuto Firmed";
+                        oJobHeadRow.CommentText = sJobComment;
+                        oJobHeadRow.RowMod = "U";
+                        oJobHeadRow.EndEdit();
+                        oJobEntryImpl.Update(oJobEntryDataSet);
+                    }
+                }
+            }
+
+        }
+
+        #endregion
+
+        #region Data Members
+
+        private List<HSUnfirmJob> m_oUnfirmJobs;
+
+        #endregion
+
     }
 }

@@ -112,6 +112,7 @@ namespace HorizonScientific
 
                 bool bValidateSalesOrders = false;
                 bool bValidateJobs = false;
+                bool bFirmJobs = false;
                 bool bValidatePurchaseOrders = false;
                 bool bValidatePOReceipts = false;
 
@@ -531,6 +532,7 @@ namespace HorizonScientific
                     // tasks we perform when kicked off from the task scheduler
                     bValidateSalesOrders = true;
                     bValidateJobs = true;
+                    bFirmJobs = true;
                     bCheckIfOperationBeStarted = false;
                     bLoadAssociatedJobs = false;
                     bCompletePriorOperations = false;
@@ -698,6 +700,20 @@ namespace HorizonScientific
                         catch (Exception ex)
                         {
                             ReportException(ex, "Validate Jobs");
+                        }
+                    }
+
+                    if ( (bFirmJobs == true) && (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0) )
+                    {
+                        // Spincraft MA wants all unfirm job suggestions to become firm
+                        HSFixUnfirmJobs oFixUnfirmJobs = new HSFixUnfirmJobs(AppSession);
+                        try
+                        {
+                            oFixUnfirmJobs.FirmJobs(AppSession);
+                        }
+                        catch (Exception ex)
+                        {
+                            ReportException(ex, "Firm Jobs");
                         }
                     }
 
