@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -107,7 +108,13 @@ namespace WeekendWork
                     }
                 }
 
-                if (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0)
+                if (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_CA_COMPANY_ID, true) == 0)
+                {
+                    g_sConfigLocation = g_sSpincraftCAConfiguration;
+                    sCompany = CompanyConfiguration.SPINCRAFT_CA_COMPANY_ID;
+                    sProductionCalendarId = ProductionCalendarCollection.SPINCRAFT_CA_PRODUCTION_CALENDAR;
+                }
+                else if (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0)
                 {
                     g_sConfigLocation = g_sSpincraftMAConfiguration;
                     sCompany = CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID;
@@ -321,26 +328,15 @@ namespace WeekendWork
         public static Session g_oSession = null;
 
         public static string g_sConfigLocation = "";
+        //public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMAPilotSSO.sysconfig";
+        //public static string g_sSpincraftWIConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftWIPilotSSO.sysconfig";
+        public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMALiveSSO.sysconfig";
+        public static string g_sSpincraftWIConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftWILiveSSO.sysconfig";
+        public static string g_sSpincraftCAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftCALiveSSO.sysconfig";
 
-        //public static string g_sSpincraftMAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftMALive\config\SpincraftMAPilotSSO.sysconfig";
-        //public static string g_sSpincraftWIConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftWILive\config\SpincraftWIPilotSSO.sysconfig";
-        //public static string g_sSpincraftMAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftCALive\config\SpincraftMATestSSO.sysconfig";
-
-        // ON RDS SERVER
-        //public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMALiveSSO.sysconfig";
-        //public static string g_sSpincraftWIConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftWILiveSSO.sysconfig";
-        //public static string g_sSpincraftCAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftCALiveSSO.sysconfig";
-        //private static string TEMP_FILE_DIRECTORY = @"C:\Epicor\Spincraft\TempFiles\";
-        //private static string TEMPLATES_FILE_DIRECTORY = @"C:\Epicor\Spincraft\Templates\";
-
-        // ON APP SERVER
-        public static string g_sSpincraftMAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftMALive\config\SpincraftMALiveSSO.sysconfig";
-        public static string g_sSpincraftWIConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftWILive\config\SpincraftWILiveSSO.sysconfig";
-        public static string g_sSpincraftCAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftCALive\config\SpincraftCALiveSSO.sysconfig";
-        private static string TEMP_FILE_DIRECTORY = @"E:\Epicor\ERP11\Spincraft\TempFiles\";
-        private static string TEMPLATES_FILE_DIRECTORY = @"E:\Epicor\ERP11\Spincraft\Templates\";
-
-        private static string UPLOAD_FILE_DIRECTORY = @"\\ETUS25AN-AP0001\UploadedFiles\";
-        private static string ARCHIVE_FILE_DIRECTORY = @"\\ETUS25AN-AP0001\UploadedFiles\Archived\";
+        private static string TEMP_FILE_DIRECTORY = @"C:\Epicor\Spincraft\TempFiles\";
+        private static string UPLOAD_FILE_DIRECTORY = @"\\ETUS25AN-SQ0001\UploadedFiles\";
+        private static string ARCHIVE_FILE_DIRECTORY = @"\\ETUS25AN-SQ0001\UploadedFiles\Archived\";
+        private static string TEMPLATES_FILE_DIRECTORY = @"C:\Epicor\Spincraft\Templates\";
     }
 }

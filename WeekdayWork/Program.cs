@@ -112,6 +112,7 @@ namespace HorizonScientific
 
                 bool bValidateSalesOrders = false;
                 bool bValidateJobs = false;
+                bool bFirmJobs = false;
                 bool bValidatePurchaseOrders = false;
                 bool bValidatePOReceipts = false;
 
@@ -531,6 +532,7 @@ namespace HorizonScientific
                     // tasks we perform when kicked off from the task scheduler
                     bValidateSalesOrders = true;
                     bValidateJobs = true;
+                    bFirmJobs = true;
                     bCheckIfOperationBeStarted = false;
                     bLoadAssociatedJobs = false;
                     bCompletePriorOperations = false;
@@ -545,7 +547,14 @@ namespace HorizonScientific
                     File.Delete(oTmpFile.FullName);
                 }
 
-                if (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0)
+                if (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_CA_COMPANY_ID, true) == 0)
+                {
+                    g_sConfigLocation = g_sSpincraftCAConfiguration;
+                    sCompany = CompanyConfiguration.SPINCRAFT_CA_COMPANY_ID;
+                    sCheckNumberPrefix = "06500";
+                    sProductionCalendarId = ProductionCalendarCollection.SPINCRAFT_CA_PRODUCTION_CALENDAR;
+                }
+                else if (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0)
                 {
                     g_sConfigLocation = g_sSpincraftMAConfiguration;
                     sCompany = CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID;
@@ -560,7 +569,7 @@ namespace HorizonScientific
                     sCheckNumberPrefix = "06500";
                     sProductionCalendarId = ProductionCalendarCollection.SPINCRAFT_WI_PRODUCTION_CALENDAR;
                 }
-  
+
 
                 g_oSession = new Session(HSUser.SPINCRAFT_SERVICE_ACCOUNT_ID, HSUser.SPINCRAFT_SERVICE_PASSWORD, Session.LicenseType.Default, g_sConfigLocation);
                 if (g_oSession != null)
@@ -618,13 +627,13 @@ namespace HorizonScientific
                     }
                     if (bCompletePriorOperations == true)
                     {
-                        //sJobNum = "31306-02";
+                        //sJobNum = "000023426";
                         //iOrderNum = 24056;
                         //iOrderLine = 1;
                         //iOrderRelNum = 1;
                         //sPartNum = "2088FA";
-                        //iAssemblySequence = 2;
-                        //iOperationSequence = 10;
+                        //iAssemblySequence = 0;
+                        //iOperationSequence = 30;
                         //sEmployeeId = "168";
                         //bLoadAssociatedJobs = true;
 
@@ -648,8 +657,8 @@ namespace HorizonScientific
                                 oAnalyzeOperationsToComplete.LoadDataForJob(AppSession, sTmpJonNum, bLoadAssociatedJobs);
                                 oAllAnalysis.Add(oAnalyzeOperationsToComplete);
                             }
-                        }    
-                        else  if ( (iOrderNum != 0) && (iOrderLine != 0) && (iOrderRelNum != 0) )
+                        }
+                        else if ((iOrderNum != 0) && (iOrderLine != 0) && (iOrderRelNum != 0))
                         {
                             AnalyzeOperationsToComplete oAnalyzeOperationsToComplete = new AnalyzeOperationsToComplete();
                             oAnalyzeOperationsToComplete.LoadDataForJob(AppSession, iOrderNum, iOrderLine, iOrderRelNum, bLoadAssociatedJobs);
@@ -698,6 +707,20 @@ namespace HorizonScientific
                         catch (Exception ex)
                         {
                             ReportException(ex, "Validate Jobs");
+                        }
+                    }
+
+                    if ((bFirmJobs == true) && (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0))
+                    {
+                        // Spincraft MA wants all unfirm job suggestions to become firm
+                        HSFixUnfirmJobs oFixUnfirmJobs = new HSFixUnfirmJobs(AppSession);
+                        try
+                        {
+                            oFixUnfirmJobs.FirmJobs(AppSession);
+                        }
+                        catch (Exception ex)
+                        {
+                            ReportException(ex, "Firm Jobs");
                         }
                     }
 
@@ -1006,10 +1029,8 @@ namespace HorizonScientific
                     {
                         try
                         {
-                            //iStartCheckNum = 41191;
-                            //iEndCheckNum = 41197;
-                            //dtStartCheckDate = new DateTime(2026, 1, 1);
-                            //dtEndCheckDate = new DateTime(2026, 1, 15);
+                            //dtStartCheckDate = new DateTime(2025, 9, 1);
+                            //dtEndCheckDate = new DateTime(2025, 9, 15);
                             if (HSPositivePay.Initialize(AppSession, iStartCheckNum, iEndCheckNum, dtStartCheckDate, dtEndCheckDate) == false)
                             {
                                 Console.WriteLine("Failed to load all Positive Pay Documents!");
@@ -1123,27 +1144,17 @@ namespace HorizonScientific
         public static Session g_oSession = null;
 
         public static string g_sConfigLocation = "";
+        //public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMAPilotSSO.sysconfig";
+        //public static string g_sSpincraftWIConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftWIPilotSSO.sysconfig";
+        //public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMATestSSO.sysconfig";
+        public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMALiveSSO.sysconfig";
+        public static string g_sSpincraftWIConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftWILiveSSO.sysconfig";
+        public static string g_sSpincraftCAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftCALiveSSO.sysconfig";
 
-        //public static string g_sSpincraftMAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftMALive\config\SpincraftMAPilotSSO.sysconfig";
-        //public static string g_sSpincraftWIConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftWILive\config\SpincraftWIPilotSSO.sysconfig";
-        //public static string g_sSpincraftMAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftCALive\config\SpincraftMATestSSO.sysconfig";
-
-        // ON RDS SERVER
-        //public static string g_sSpincraftMAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftMALiveSSO.sysconfig";
-        //public static string g_sSpincraftWIConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftWILiveSSO.sysconfig";
-        //public static string g_sSpincraftCAConfiguration = @"C:\Epicor\ERP11.2.400Client\Client\config\SpincraftCALiveSSO.sysconfig";
-        //private static string TEMP_FILE_DIRECTORY = @"C:\Epicor\Spincraft\TempFiles\";
-        //private static string TEMPLATES_FILE_DIRECTORY = @"C:\Epicor\Spincraft\Templates\";
-
-        // ON APP SERVER
-        public static string g_sSpincraftMAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftMALive\config\SpincraftMALiveSSO.sysconfig";
-        public static string g_sSpincraftWIConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftWILive\config\SpincraftWILiveSSO.sysconfig";
-        public static string g_sSpincraftCAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftCALive\config\SpincraftCALiveSSO.sysconfig";
-        private static string TEMP_FILE_DIRECTORY = @"E:\Epicor\ERP11\Spincraft\TempFiles\";
-        private static string TEMPLATES_FILE_DIRECTORY = @"E:\Epicor\ERP11\Spincraft\Templates\";
-
-        private static string UPLOAD_FILE_DIRECTORY = @"\\ETUS25AN-AP0001\UploadedFiles\";
-        private static string ARCHIVE_FILE_DIRECTORY = @"\\ETUS25AN-AP0001\UploadedFiles\Archived\";
+        private static string TEMP_FILE_DIRECTORY = @"C:\Epicor\Spincraft\TempFiles\";
+        private static string UPLOAD_FILE_DIRECTORY = @"\\ETUS25AN-SQ0001\UploadedFiles\";
+        private static string ARCHIVE_FILE_DIRECTORY = @"\\ETUS25AN-SQ0001\UploadedFiles\Archived\";
+        private static string TEMPLATES_FILE_DIRECTORY = @"C:\Epicor\Spincraft\Templates\";
 
     }
 }
