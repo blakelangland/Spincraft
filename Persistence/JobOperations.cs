@@ -1665,16 +1665,14 @@ namespace HorizonScientific
                             oLaborImpl.LaborRateCalc(oLaborDataSet);
 
                             // if there are setup hours remaining then we enter that now
-                            //if ((oOperation.SetupTimeRemaining > 0) && (string.Compare(oOperation.LaborEntryMethod, "T", true) == 0))
-                            //{
-                                // The following two lines are the normal way to record setup time, but ETG MA WANTS TO SET THE TIME TO ZERO SO AS NOT TO RECORD LABOR OR BURDEN
-                                //oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = oOperation.SetupTimeRemaining;
-                                //oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = oOperation.SetupTimeRemaining;
-
-                                // ETG MA WANTS TO SET THE TIME TO ZERO SO AS NOT TO RECORD LABOR OR BURDEN
-                                oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = 0.0M;
-                                oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = 0.0M;
-                            //}
+                            if ((oOperation.ActualSetupHours == 0) && (oOperation.SetupTimeRemaining > 0) && (string.Compare(oOperation.LaborEntryMethod, "T", true) == 0))
+                            {
+                                // WE ARE ONLY SUBMITTING .01 HOURS FOR SETUP TIME AT MOST
+                                oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = 0.01M;
+                                oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = 0.01M;
+                                //////////oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = oOperation.SetupTimeRemaining;
+                                //////////oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = oOperation.SetupTimeRemaining;
+                            }
                             // set this to entered
                             oLaborDataSet.LaborDtl[iAddedLaborIndex].TimeStatus = "E";
 
@@ -1755,16 +1753,14 @@ namespace HorizonScientific
                                 }
                             }
                             // if there are production hours remaining then we enter that now
-                            //if ((oOperation.ProductionTimeRemaining > 0) && (string.Compare(oOperation.LaborEntryMethod, "T", true) == 0))
-                            //{
-                                // The following two lines are the normal way to record production time, but ETG MA WANTS TO SET THE TIME TO ZERO SO AS NOT TO RECORD LABOR OR BURDEN
-                                //oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = oOperation.ProductionTimeRemaining;
-                                //oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = oOperation.ProductionTimeRemaining;
-                                
-                                // ETG MA WANTS TO SET THE TIME TO ZERO SO AS NOT TO RECORD LABOR OR BURDEN
-                                oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = 0.0M;
-                                oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = 0.0M;
-                            //}
+                            if ((oOperation.ActualProductionHours == 0) && (oOperation.ProductionTimeRemaining > 0) && (string.Compare(oOperation.LaborEntryMethod, "T", true) == 0))
+                            {
+                                // WE ARE ONLY SUBMITTING .01 HOURS FOR PRODUCTION TIME AT MOST
+                                oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = 0.01M;
+                                oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = 0.01M;
+                                //////////oLaborDataSet.LaborDtl[iAddedLaborIndex].LaborHrs = oOperation.ProductionTimeRemaining;
+                                //////////oLaborDataSet.LaborDtl[iAddedLaborIndex].BurdenHrs = oOperation.ProductionTimeRemaining;
+                            }
                             // set this to entered
                             oLaborDataSet.LaborDtl[iAddedLaborIndex].TimeStatus = "E";
 
