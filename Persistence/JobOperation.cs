@@ -203,6 +203,10 @@ namespace HorizonScientific
             {
                 m_dRunQty = (decimal)oRow["JobOper_RunQty"];
             }
+            if (oRow["JobOper_QtyCompleted"] != DBNull.Value)
+            {
+                m_dQtyCompleted = (decimal)oRow["JobOper_QtyCompleted"];
+            }
             if (oRow["JobOper_SchedRelation"] != DBNull.Value)
             {
                 m_sScheduleRelation = (string)oRow["JobOper_SchedRelation"];
@@ -444,6 +448,11 @@ namespace HorizonScientific
             get { return m_dRunQty; }
             set { m_dRunQty = value; }
         }
+        public decimal QtyCompleted
+        {
+            get { return m_dQtyCompleted; }
+            set { m_dQtyCompleted = value; }
+        }
         public string ScheduleRelation
         {
             get { return m_sScheduleRelation; }
@@ -545,6 +554,7 @@ namespace HorizonScientific
         private decimal m_dDaysOut;
         private int m_iVendorNum;
         private decimal m_dRunQty;
+        private decimal m_dQtyCompleted;
         private string m_sScheduleRelation;
         private decimal m_dConcurrentCapacity;
         private string m_sSendAheadType;

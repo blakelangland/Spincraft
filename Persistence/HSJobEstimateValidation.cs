@@ -1,28 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Ice.Core;
-using Erp.Adapters;
-using Erp.BO;
-using Erp.Proxy.BO;
-using Ice.Lib.Framework;
-using Ice.Adapters;
-using Ice.BO;
-
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
+﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Drawing.Spreadsheet;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Erp.Adapters;
+using Erp.BO;
+using Erp.Proxy.BO;
+using Ice.Adapters;
+using Ice.BO;
+using Ice.Core;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
 using SpreadsheetLight;
 using SpreadsheetLight.Charts;
-using Ice.Lib.Searches;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 
 namespace HorizonScientific
@@ -46,7 +45,7 @@ namespace HorizonScientific
 
             // find all operation costs for this job and assembly seq
             m_oOperationCosts = oAllOperationCosts.Where(oItem => (oItem.AssemblySeq == m_iAssemblySeq)).ToList();
- 
+
             // now compute all costs for this assembly
             if (m_oOperationCosts != null)
             {
@@ -147,11 +146,11 @@ namespace HorizonScientific
         #endregion
 
         #region Properties
-        public HSJob    MyJob
+        public HSJob MyJob
         {
             get { return m_oJob; }
         }
-        public int      AssemblySeq
+        public int AssemblySeq
         {
             get { return m_iAssemblySeq; }
         }
@@ -191,7 +190,7 @@ namespace HorizonScientific
         {
             get { return m_oChildAssemblies; }
         }
-        public HSAssembly   ParentAssembly
+        public HSAssembly ParentAssembly
         {
             get { return m_oParentAssembly; }
         }
@@ -273,19 +272,32 @@ namespace HorizonScientific
         public HSJob(string sJobNum, HSValidateParts oValidateParts, List<JobMaterial> oAllJobMaterials, List<JobOperation> oAllJobOperations, List<JobOpsEstVsActualCosts> oAllJobOperationCosts, JobEstVsActualCostsQty oJobEstVsActualCosts, bool bAcceptActualsForMissingEstimates)
         {
             m_sJobNum = sJobNum;
-            if (oAllJobOperationCosts.Count > 0)
-            {
-                m_iOrderNum = oAllJobOperationCosts[0].OrderNum;
-                m_iOrderLine = oAllJobOperationCosts[0].OrderLine;
-                m_iOrderRel = oAllJobOperationCosts[0].OrderRel;
-                m_sWarehouseCode = oAllJobOperationCosts[0].WarehouseCode;
-            }
-            else if (oJobEstVsActualCosts != null)
+            m_bJobClosed = true;
+            m_bJobComplete = false;
+
+            if (oJobEstVsActualCosts != null)
             {
                 m_iOrderNum = oJobEstVsActualCosts.OrderNum;
                 m_iOrderLine = oJobEstVsActualCosts.OrderLine;
                 m_iOrderRel = oJobEstVsActualCosts.OrderRelNum;
+                if ((m_iOrderNum != 0) && (m_iOrderLine != 0) && (m_iOrderRel != 0))
+                {
+                    m_sOrderNumLineRel = $"{m_iOrderNum}-{m_iOrderLine}-{m_iOrderRel}";
+                }
                 m_sWarehouseCode = oJobEstVsActualCosts.WarehouseCode;
+                m_bJobClosed = oJobEstVsActualCosts.JobClosed;
+                m_bJobComplete = oJobEstVsActualCosts.JobComplete;
+            }
+            else if (oAllJobOperationCosts.Count > 0)
+            {
+                m_iOrderNum = oAllJobOperationCosts[0].OrderNum;
+                m_iOrderLine = oAllJobOperationCosts[0].OrderLine;
+                m_iOrderRel = oAllJobOperationCosts[0].OrderRel;
+                if ((m_iOrderNum != 0) && (m_iOrderLine != 0) && (m_iOrderRel != 0))
+                {
+                    m_sOrderNumLineRel = $"{m_iOrderNum}-{m_iOrderLine}-{m_iOrderRel}";
+                }
+                m_sWarehouseCode = oAllJobOperationCosts[0].WarehouseCode;
             }
 
             // get all of our materials, ops, etc.
@@ -344,6 +356,10 @@ namespace HorizonScientific
 
             // now compute the estimated margin and profit from all operations and materials not yet completed
             m_dRemainingCostsEstimated = 0M;
+            m_dRemainingSubcontractCostEstimated = 0M;
+            m_dRemainingLaborCostEstimated = 0M;
+            m_dRemainingBurdenCostEstimated = 0M;
+            m_dRemainingMaterialsCostEstimated = 0M;
 
             // this will hold what will be the total costs of the job according to the estimates for ops and parts
             decimal dPercentEstTotalCost = 0M;
@@ -353,6 +369,10 @@ namespace HorizonScientific
             {
                 foreach (JobOpsEstVsActualCosts oOperationCost in m_oJobOperationCosts)
                 {
+                    m_dRemainingSubcontractCostEstimated += oOperationCost.EstimatedRemainingSubCost;
+                    m_dRemainingLaborCostEstimated += oOperationCost.EstimatedRemainingLaborCost;
+                    m_dRemainingBurdenCostEstimated += oOperationCost.EstimatedRemainingBurCost;
+
                     m_dRemainingCostsEstimated += oOperationCost.EstimatedRemainingCost;
                     dPercentEstTotalCost += oOperationCost.EstCost * oOperationCost.PercentComplete;
                 }
@@ -362,6 +382,8 @@ namespace HorizonScientific
             {
                 foreach (JobMaterial oMaterial in m_oJobMaterials)
                 {
+                    m_dRemainingMaterialsCostEstimated += oMaterial.EstRemainingCostMaterial;
+
                     m_dRemainingCostsEstimated += oMaterial.EstRemainingCost;
                     dPercentEstTotalCost += oMaterial.EstTotalCost * oMaterial.PercentComplete;
                 }
@@ -456,8 +478,34 @@ namespace HorizonScientific
         public List<HSAssembly> GetAssembliesInOrder()
         {
             List<HSAssembly> oOrderedAssemblies = new List<HSAssembly>();
-            m_oRootAssembly.GetAssembliesInOrder(oOrderedAssemblies);
+            if (m_oRootAssembly != null)
+            {
+                m_oRootAssembly.GetAssembliesInOrder(oOrderedAssemblies);
+            }
             return oOrderedAssemblies;
+        }
+
+        public JobOperation GetLastCompletedOperation()
+        {
+            JobOperation oLastCompletedOperation = null;
+            // we need to walk through the assemblies and find the last completed operation -- we will do this by looking at the operations in order of assembly and then operation sequence
+            List<HSAssembly> oOrderedAssemblies = GetAssembliesInOrder();
+            foreach (HSAssembly oAssembly in oOrderedAssemblies)
+            {
+                if (oAssembly.Operations != null)
+                {
+                    List<JobOperation> oCompletedOperations = oAssembly.Operations.Where(oItem => oItem.OpComplete == true).ToList();
+                    if (oCompletedOperations.Count > 0)
+                    {
+                        JobOperation oLastOp = oCompletedOperations.OrderByDescending(oItem => oItem.OperationSeq).First();
+                        if ((oLastCompletedOperation == null) || (oLastOp.OperationSeq > oLastCompletedOperation.OperationSeq))
+                        {
+                            oLastCompletedOperation = oLastOp;
+                        }
+                    }
+                }
+            }
+            return oLastCompletedOperation;
         }
         #endregion
 
@@ -468,6 +516,17 @@ namespace HorizonScientific
             get { return m_sJobNum; }
             set { m_sJobNum = value; }
         }
+        public bool JobClosed
+        {
+            get { return m_bJobClosed; }
+            set { m_bJobClosed = value; }
+        }
+        public bool JobComplete
+        {
+            get { return m_bJobComplete; }
+            set { m_bJobComplete = value; }
+        }
+
         public int OrderNum
         {
             get { return m_iOrderNum; }
@@ -483,6 +542,11 @@ namespace HorizonScientific
         {
             get { return m_iOrderRel; }
             set { m_iOrderRel = value; }
+        }
+        public string OrderNumLineRel
+        {
+            get { return m_sOrderNumLineRel; }
+            set { m_sOrderNumLineRel = value; }
         }
         public string CustomerCode
         {
@@ -660,6 +724,29 @@ namespace HorizonScientific
             get { return m_dRemainingCostsEstimated; }
             set { m_dRemainingCostsEstimated = value; }
         }
+
+        public decimal RemainingSubcontractCostEstimated
+        {
+            get { return m_dRemainingSubcontractCostEstimated; }
+            set { m_dRemainingSubcontractCostEstimated = value; }
+        }
+
+        public decimal RemainingLaborCostEstimated
+        {
+            get { return m_dRemainingLaborCostEstimated; }
+            set { m_dRemainingLaborCostEstimated = value; }
+        }
+        public decimal RemainingBurdenCostEstimated
+        {
+            get { return m_dRemainingBurdenCostEstimated; }
+            set { m_dRemainingBurdenCostEstimated = value; }
+        }
+        public decimal RemainingMaterialsCostEstimated
+        {
+            get { return m_dRemainingMaterialsCostEstimated; }
+            set { m_dRemainingMaterialsCostEstimated = value; }
+        }
+
         public decimal RemainingCostsProjected
         {
             get { return m_dRemainingCostsProjected; }
@@ -689,9 +776,14 @@ namespace HorizonScientific
 
         #region Data Members
         private string m_sJobNum;
+        private bool m_bJobClosed;
+        private bool m_bJobComplete;
+
         private int m_iOrderNum;
         private int m_iOrderLine;
         private int m_iOrderRel;
+        private string m_sOrderNumLineRel;
+
         private string m_sCustomerCode;
         private string m_sCustomerName;
         private string m_sMarketSegment;
@@ -734,6 +826,11 @@ namespace HorizonScientific
         private decimal m_dMarginToDate;
         private decimal m_dPercentComplete;
         private decimal m_dRemainingCostsEstimated;
+        private decimal m_dRemainingMaterialsCostEstimated;
+        private decimal m_dRemainingLaborCostEstimated;
+        private decimal m_dRemainingBurdenCostEstimated;
+        private decimal m_dRemainingSubcontractCostEstimated;
+
         private decimal m_dRemainingCostsProjected;
         private decimal m_dProfitEstimated;
         private decimal m_dProfitProjected;
@@ -2605,7 +2702,7 @@ namespace HorizonScientific
             bool bSetHeader = false;
             foreach (JobOpsEstVsActualCosts oOpCost in oOperationsWithNoLaborCost)
             {
-                JobOperation oJobOperation = oOperationsWithHours.FirstOrDefault(oItem => (string.Compare(oItem.JobNum, oOpCost.JobNum, true) == 0) && (oItem.AssemblySeq == oOpCost.AssemblySeq) && (oItem.OperationSeq == oOpCost.OprSeq) && (string.Compare(oItem.OpCode, oOpCost.OpCode, true) == 0) );
+                JobOperation oJobOperation = oOperationsWithHours.FirstOrDefault(oItem => (string.Compare(oItem.JobNum, oOpCost.JobNum, true) == 0) && (oItem.AssemblySeq == oOpCost.AssemblySeq) && (oItem.OperationSeq == oOpCost.OprSeq) && (string.Compare(oItem.OpCode, oOpCost.OpCode, true) == 0));
                 if (oJobOperation != null)
                 {
                     // this operation has hours but the labor comes out to $0 so that means we must have a labor rate of $0
@@ -4003,7 +4100,7 @@ namespace HorizonScientific
 
                     iNumberOfRows++;
                     bDataInReport = true;
-                    
+
                 }
 
                 // jobs missing due date
@@ -5105,7 +5202,7 @@ namespace HorizonScientific
                 //////////    }
                 //////////}
                 #endregion
-                
+
                 #endregion
 
                 #region Operation Attributes
@@ -8217,6 +8314,579 @@ namespace HorizonScientific
 
     }
 
+    public class HSProjectTrackerForJobs
+    {
+        #region constructors
+        public HSProjectTrackerForJobs(string sCompany)
+        {
+            m_sCompany = sCompany;
+
+            if (string.Compare(m_sCompany, CompanyConfiguration.SPINCRAFT_WI_COMPANY_ID, true) == 0)
+            {
+                // Wisconsin ignores parts in the following classes
+                m_oPartClassesToIgnore.Add("CATL");
+                m_oPartClassesToIgnore.Add("COTL");
+                m_oPartClassesToIgnore.Add("ENGD");
+                m_oPartClassesToIgnore.Add("FA");
+                m_oPartClassesToIgnore.Add("GOVT");
+                m_oPartClassesToIgnore.Add("INSP");
+                m_oPartClassesToIgnore.Add("LTAT");
+                m_oPartClassesToIgnore.Add("MFG");
+                m_oPartClassesToIgnore.Add("PAIN");
+                m_oPartClassesToIgnore.Add("PUR");
+                m_oPartClassesToIgnore.Add("SA");
+                m_oPartClassesToIgnore.Add("SHIP");
+                m_oPartClassesToIgnore.Add("SPNS");
+                m_oPartClassesToIgnore.Add("SPTL");
+                m_oPartClassesToIgnore.Add("SUPL");
+                m_oPartClassesToIgnore.Add("WELD");
+            }
+        }
+
+        #endregion
+
+        #region Methods
+        public void Initialize(Session oSession, HSValidateParts oValidateParts, string sJobNum, string sPartNum)
+        {
+            // loading all parts from the part master
+            if (oValidateParts == null)
+            {
+                if (m_oValidateParts.Initialize(oSession) == false)
+                {
+                    Console.WriteLine("Failed to load the validate parts!");
+                }
+                oValidateParts = m_oValidateParts;
+            }
+            else
+            {
+                m_oValidateParts = oValidateParts;
+            }
+
+            // get all resources
+            m_oBOMSupport = new BOMSupport(m_sCompany);
+            if (m_oBOMSupport.InitializeResourceGroups(oSession) == false)
+            {
+                Console.WriteLine("Failed to load the BOM Support object!");
+            }
+
+            // get all resouce groups
+            if (m_oBOMSupport.InitializeResources(oSession) == false)
+            {
+                Console.WriteLine("Failed to load the BOM Support object!");
+            }
+
+            // get a list of all materials for open jobs
+            m_oJobMaterials.Clear();
+            Ice.Proxy.BO.DynamicQueryImpl oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
+            QueryExecutionDataSet oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_LIST_ALL_JOB_MATERIALS);
+            oQueryExecutionDataSet.Clear();
+            if (string.IsNullOrEmpty(sJobNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("JobNum", sJobNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            if (string.IsNullOrEmpty(sPartNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            oQueryExecutionDataSet.AcceptChanges();
+            DataSet oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_LIST_ALL_JOB_MATERIALS, oQueryExecutionDataSet);
+            foreach (DataRow oRow in oDataSet.Tables[0].Rows)
+            {
+                JobMaterial oJobMaterial = new JobMaterial(oRow, m_oValidateParts, false);
+                m_oJobMaterials.Add(oJobMaterial);
+                string sTmpJobNum = oJobMaterial.JobNum;
+                List<JobMaterial> oTmpJobMaterials = null;
+                if (m_oFastJobMaterials.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobMaterials = m_oFastJobMaterials[sTmpJobNum];
+                }
+                else
+                {
+                    oTmpJobMaterials = new List<JobMaterial>();
+                    m_oFastJobMaterials[sTmpJobNum] = oTmpJobMaterials;
+                }
+                oTmpJobMaterials.Add(oJobMaterial);
+            }
+
+            m_oJobOperations.Clear();
+            oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
+            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_LIST_ALL_JOB_OPERATIONS);
+            oQueryExecutionDataSet.Clear();
+            if (string.IsNullOrEmpty(sJobNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("JobNum", sJobNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            if (string.IsNullOrEmpty(sPartNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            oQueryExecutionDataSet.AcceptChanges();
+            oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_LIST_ALL_JOB_OPERATIONS, oQueryExecutionDataSet);
+            foreach (DataRow oRow in oDataSet.Tables[0].Rows)
+            {
+                JobOperation oJobOperation = new JobOperation(oRow);
+                m_oJobOperations.Add(oJobOperation);
+
+                string sTmpJobNum = oJobOperation.JobNum;
+                List<JobOperation> oTmpJobOperations = null;
+                if (m_oFastJobOperations.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobOperations = m_oFastJobOperations[sTmpJobNum];
+                }
+                else
+                {
+                    oTmpJobOperations = new List<JobOperation>();
+                    m_oFastJobOperations[sTmpJobNum] = oTmpJobOperations;
+                }
+                oTmpJobOperations.Add(oJobOperation);
+            }
+
+            // pull in POC estimate vs actual costs for all open jobs
+            m_oJobOpsEstVsActualCosts.Clear();
+            oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
+            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS);
+            oQueryExecutionDataSet.Clear();
+            if (string.IsNullOrEmpty(sJobNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("JobNum", sJobNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            if (string.IsNullOrEmpty(sPartNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            oQueryExecutionDataSet.AcceptChanges();
+            oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS, oQueryExecutionDataSet);
+            foreach (DataRow oRow in oDataSet.Tables[0].Rows)
+            {
+                JobOpsEstVsActualCosts oJobEstVsActualCosts = new JobOpsEstVsActualCosts(oRow, false);
+                m_oJobOpsEstVsActualCosts.Add(oJobEstVsActualCosts);
+
+                string sTmpJobNum = oJobEstVsActualCosts.JobNum;
+                List<JobOpsEstVsActualCosts> oTmpJobOperationCosts = null;
+                if (m_oFastJobOperationCosts.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobOperationCosts = m_oFastJobOperationCosts[sTmpJobNum];
+                }
+                else
+                {
+                    oTmpJobOperationCosts = new List<JobOpsEstVsActualCosts>();
+                    m_oFastJobOperationCosts[sTmpJobNum] = oTmpJobOperationCosts;
+                }
+                oTmpJobOperationCosts.Add(oJobEstVsActualCosts);
+            }
+
+            m_oJobEstVsActualCostsQtys.Clear();
+            oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
+            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY);
+            oQueryExecutionDataSet.Clear();
+            if (string.IsNullOrEmpty(sJobNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("JobNum", sJobNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            if (string.IsNullOrEmpty(sPartNum) == false)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
+            }
+            oQueryExecutionDataSet.AcceptChanges();
+            oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY, oQueryExecutionDataSet);
+            foreach (DataRow oRow in oDataSet.Tables[0].Rows)
+            {
+                JobEstVsActualCostsQty oJobEstVsActualCostsQty = new JobEstVsActualCostsQty(oRow);
+                m_oJobEstVsActualCostsQtys.Add(oJobEstVsActualCostsQty);
+
+                string sTmpJobNum = oJobEstVsActualCostsQty.JobNum;
+                if (m_oFastJobEstVsActualCosts.ContainsKey(sTmpJobNum) == false)
+                {
+                    m_oFastJobEstVsActualCosts[sTmpJobNum] = oJobEstVsActualCostsQty;
+                }
+            }
+
+
+            m_sPartNum = sPartNum;
+
+            // we need to get the unique list of job numbers
+            List<string> oAllJobNums = new List<string>();
+            List<string> oAllJobsForOperations = m_oJobOperations.Select(oItem => oItem.JobNum).ToList();
+            oAllJobNums.AddRange(oAllJobsForOperations);
+            List<string> oAllJobsForMaterials = m_oJobMaterials.Select(oItem => oItem.JobNum).ToList();
+            oAllJobNums.AddRange(oAllJobsForMaterials);
+            List<string> oAllJobsForOpCosts = m_oJobOpsEstVsActualCosts.Select(oItem => oItem.JobNum).ToList();
+            oAllJobNums.AddRange(oAllJobsForOpCosts);
+            List<string> oAllJobEstVsActualCosts = m_oJobEstVsActualCostsQtys.Select(oItem => oItem.JobNum).ToList();
+            oAllJobNums.AddRange(oAllJobEstVsActualCosts);
+
+            // get rid of all duplicate job numbers
+            m_oJobNums = oAllJobNums.Distinct().ToList();
+
+            // now we create a list of jobs
+            foreach (string sTmpJobNum in m_oJobNums)
+            {
+                // get the list of materials and ops specific to this job
+                List<JobMaterial> oTmpJobMaterials = new List<JobMaterial>();
+                if (m_oFastJobMaterials.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobMaterials = m_oFastJobMaterials[sTmpJobNum];
+                }
+
+                List<JobOperation> oTmpJobOperations = new List<JobOperation>();
+                if (m_oFastJobOperations.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobOperations = m_oFastJobOperations[sTmpJobNum];
+                }
+
+                List<JobOpsEstVsActualCosts> oTmpJobOperationCosts = new List<JobOpsEstVsActualCosts>();
+                if (m_oFastJobOperationCosts.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobOperationCosts = m_oFastJobOperationCosts[sTmpJobNum];
+                }
+
+                JobEstVsActualCostsQty oTmpJobEstVsActualCosts = new JobEstVsActualCostsQty();
+                if (m_oFastJobEstVsActualCosts.ContainsKey(sTmpJobNum) == true)
+                {
+                    oTmpJobEstVsActualCosts = m_oFastJobEstVsActualCosts[sTmpJobNum];
+                }
+
+                HSJob oJob = new HSJob(sTmpJobNum, m_oValidateParts, oTmpJobMaterials, oTmpJobOperations, oTmpJobOperationCosts, oTmpJobEstVsActualCosts, false);
+                m_oAllJobs.Add(oJob);
+            }
+        }
+
+        public void GenerateProjectTrackerForJobs(string sTemplatesFileDirectory, string sTmpFileDirectory, HSUser oRequestingUser)
+        {
+            string sTemplateName = sTemplatesFileDirectory + "\\" + "ProjectTrackerForJobsTemplate.xlsx";
+            string sDestinationFileName = sTmpFileDirectory + "\\" + m_sCompany + "-ProjectTrackerForJobs.xlsx";
+
+            // if the file is already there then get rid of it as we are reprocessing for some reason
+            if (File.Exists(sDestinationFileName) == true)
+            {
+                try
+                {
+                    File.Delete(sDestinationFileName);
+                }
+                catch (Exception)
+                {
+                    // we will ingore this if we cannot delete the file
+                }
+            }
+
+            // read in the template file
+            SLDocument oSLDocument = new SLDocument(sTemplateName);
+
+            SLFill oSLFill = new SLFill();
+            oSLFill.SetPatternBackgroundColor(SLThemeColorIndexValues.Dark2Color);
+
+            SLAlignment oLeftAlignment = new SLAlignment();
+            oLeftAlignment.Horizontal = HorizontalAlignmentValues.Left;
+
+            SLStyle oLeftAlignmentStyle = new SLStyle();
+            oLeftAlignmentStyle.Alignment = oLeftAlignment;
+
+            SLAlignment oRightAlignment = new SLAlignment();
+            oRightAlignment.Horizontal = HorizontalAlignmentValues.Right;
+
+            SLStyle oRightAlignmentStyle = new SLStyle();
+            oRightAlignmentStyle.Alignment = oRightAlignment;
+
+            SLStyle oGood = oSLDocument.CreateStyle();
+            oGood.ApplyNamedCellStyle(SLNamedCellStyleValues.Good);
+
+            SLStyle oNeutral = oSLDocument.CreateStyle();
+            oNeutral.ApplyNamedCellStyle(SLNamedCellStyleValues.Neutral);
+
+            SLStyle oBad = oSLDocument.CreateStyle();
+            oBad.ApplyNamedCellStyle(SLNamedCellStyleValues.Bad);
+
+            SLStyle oBoldStyle = new SLStyle();
+            oBoldStyle.SetFontBold(true);
+            oBoldStyle.SetTopBorder(BorderStyleValues.Thin, SLThemeColorIndexValues.Dark2Color);
+            oBoldStyle.SetBottomBorder(BorderStyleValues.Thin, SLThemeColorIndexValues.Dark2Color);
+            oBoldStyle.SetLeftBorder(BorderStyleValues.Thin, SLThemeColorIndexValues.Dark2Color);
+            oBoldStyle.SetRightBorder(BorderStyleValues.Thin, SLThemeColorIndexValues.Dark2Color);
+            oBoldStyle.SetFontColor(SLThemeColorIndexValues.Dark2Color);
+
+            SLStyle oPositiveCurrencyNumberStyle = new SLStyle();
+            oPositiveCurrencyNumberStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+
+            SLStyle oNegativeCurrencyNumberStyle = new SLStyle();
+            oNegativeCurrencyNumberStyle.SetFontColor(System.Drawing.Color.Red);
+            oNegativeCurrencyNumberStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+
+            System.Drawing.Color oHighlightYellow = System.Drawing.Color.FromArgb(255, 255, 0);
+
+            SLStyle oHighlightHeaderStyle = new SLStyle();
+            oHighlightHeaderStyle.SetFontBold(true);
+            oHighlightHeaderStyle.SetFont(FontSchemeValues.Major, 12);
+            oHighlightHeaderStyle.SetHorizontalAlignment(DocumentFormat.OpenXml.Spreadsheet.HorizontalAlignmentValues.Center);
+            oHighlightHeaderStyle.SetPatternFill(PatternValues.Solid, oHighlightYellow, oHighlightYellow);
+            oHighlightHeaderStyle.SetFontColor(SLThemeColorIndexValues.Dark2Color);
+
+            System.Drawing.Color oLightGray = System.Drawing.Color.FromArgb(211, 211, 211);
+            SLStyle oLightGrayStyle = new SLStyle();
+            oLightGrayStyle.SetFontBold(true);
+            oLightGrayStyle.SetFont(FontSchemeValues.Major, 12);
+            oLightGrayStyle.SetHorizontalAlignment(DocumentFormat.OpenXml.Spreadsheet.HorizontalAlignmentValues.Center);
+            oLightGrayStyle.SetPatternFill(PatternValues.Solid, oLightGray, oLightGray);
+            oLightGrayStyle.SetFontColor(SLThemeColorIndexValues.Dark2Color);
+
+            SLStyle oBoldPositiveHighlightCurrencyStyle = new SLStyle();
+            oBoldPositiveHighlightCurrencyStyle.SetFontBold(true);
+            oBoldPositiveHighlightCurrencyStyle.SetPatternFill(PatternValues.Solid, oHighlightYellow, oHighlightYellow);
+            oBoldPositiveHighlightCurrencyStyle.ApplyNamedCellStyle(SLNamedCellStyleValues.Currency);
+            oBoldPositiveHighlightCurrencyStyle.Alignment = oRightAlignment;
+            oBoldPositiveHighlightCurrencyStyle.SetLeftBorder(BorderStyleValues.Thick, SLThemeColorIndexValues.Dark2Color);
+            oBoldPositiveHighlightCurrencyStyle.SetRightBorder(BorderStyleValues.Thick, SLThemeColorIndexValues.Dark2Color);
+            oBoldPositiveHighlightCurrencyStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+
+            SLStyle oBoldPositiveLightGrayCurrencyStyle = new SLStyle();
+            oBoldPositiveLightGrayCurrencyStyle.SetFontBold(true);
+            oBoldPositiveLightGrayCurrencyStyle.SetPatternFill(PatternValues.Solid, oLightGray, oLightGray);
+            oBoldPositiveLightGrayCurrencyStyle.ApplyNamedCellStyle(SLNamedCellStyleValues.Currency);
+            oBoldPositiveLightGrayCurrencyStyle.Alignment = oRightAlignment;
+            oBoldPositiveLightGrayCurrencyStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+
+            SLStyle oBoldNegativeLightGrayCurrencyStyle = new SLStyle();
+            oBoldNegativeLightGrayCurrencyStyle.SetFontBold(true);
+            oBoldNegativeLightGrayCurrencyStyle.SetFontColor(System.Drawing.Color.Red);
+            oBoldNegativeLightGrayCurrencyStyle.SetPatternFill(PatternValues.Solid, oLightGray, oLightGray);
+            oBoldNegativeLightGrayCurrencyStyle.ApplyNamedCellStyle(SLNamedCellStyleValues.Currency);
+            oBoldNegativeLightGrayCurrencyStyle.Alignment = oRightAlignment;
+            oBoldNegativeLightGrayCurrencyStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+
+            SLStyle oBoldPositiveCurrencyStyle = new SLStyle();
+            oBoldPositiveCurrencyStyle.SetFontBold(true);
+            oBoldPositiveCurrencyStyle.ApplyNamedCellStyle(SLNamedCellStyleValues.Currency);
+            oBoldPositiveCurrencyStyle.Alignment = oRightAlignment;
+            oBoldPositiveCurrencyStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+            oBoldPositiveCurrencyStyle.Fill = oSLFill;
+
+            SLStyle oBoldNegativeCurrencyStyle = new SLStyle();
+            oBoldNegativeCurrencyStyle.SetFontBold(true);
+            oBoldNegativeCurrencyStyle.SetFontColor(System.Drawing.Color.Red);
+            oBoldNegativeCurrencyStyle.ApplyNamedCellStyle(SLNamedCellStyleValues.Currency);
+            oBoldNegativeCurrencyStyle.Alignment = oRightAlignment;
+            oBoldNegativeCurrencyStyle.FormatCode = "$#,##0.00;($#,##0.00);\"-\"";
+            oBoldNegativeCurrencyStyle.Fill = oSLFill;
+
+            // we start on row 3
+            int iCurrentRow = 3;
+
+            foreach (HSJob oJob in m_oAllJobs)
+            {
+                oSLDocument.SetCellStyle(iCurrentRow, 1, oRightAlignmentStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 1, oJob.JobNum);
+
+                //
+                // JOB INFORMATION
+                //
+                oSLDocument.SetCellStyle(iCurrentRow, 2, oRightAlignmentStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 2, oJob.JobComplete);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 3, oRightAlignmentStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 3, oJob.JobClosed);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 4, oRightAlignmentStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 4, oJob.OrderNumLineRel);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 5, oRightAlignmentStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 5, oJob.PartNum);
+
+                if (oJob.ProductionQty == 0)
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 6, oBad);
+
+                }
+                oSLDocument.SetCellValue(iCurrentRow, 6, oJob.ProductionQty);
+
+                JobOperation oLastCompletedOperation = oJob.GetLastCompletedOperation();
+                if (oLastCompletedOperation != null)
+                {
+                    oSLDocument.SetCellValue(iCurrentRow, 7, oLastCompletedOperation.QtyCompleted);
+
+                    oSLDocument.SetCellValue(iCurrentRow, 8, oLastCompletedOperation.AssemblySeq);
+
+                    oSLDocument.SetCellValue(iCurrentRow, 9, oLastCompletedOperation.OperationSeq);
+                }
+                else
+                {
+                    oSLDocument.SetCellValue(iCurrentRow, 7, "N/A");
+                    oSLDocument.SetCellValue(iCurrentRow, 8, "N/A");
+                    oSLDocument.SetCellValue(iCurrentRow, 9, "N/A");
+                }
+
+                //
+                // ACTUAL COSTS (costs incurred to date)
+                //
+                oSLDocument.SetCellStyle(iCurrentRow, 10, oBoldPositiveLightGrayCurrencyStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 10, oJob.ActTotalCost);
+
+
+                oSLDocument.SetCellStyle(iCurrentRow, 11, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 11, oJob.ActMaterialCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 12, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 12, oJob.ActLaborCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 13, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 13, oJob.ActBurdenCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 14, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 14, oJob.ActSubcontractCost);
+
+                //
+                // ESTIMATED REMAINING COSTS (qty not completed * estimated cost per unit)
+                //
+                oSLDocument.SetCellStyle(iCurrentRow, 15, oBoldPositiveLightGrayCurrencyStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 15, oJob.RemainingCostsEstimated);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 16, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 16, oJob.RemainingMaterialsCostEstimated);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 17, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 17, oJob.RemainingLaborCostEstimated);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 18, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 18, oJob.RemainingBurdenCostEstimated);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 19, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 19, oJob.RemainingSubcontractCostEstimated);
+
+                //
+                // PROJECTED COSTS (Actual to date + Estimated Remaining Costs)
+                //
+                decimal dProjectedCosts = oJob.ActTotalCost + oJob.RemainingCostsEstimated;
+                oSLDocument.SetCellStyle(iCurrentRow, 20, oBoldPositiveHighlightCurrencyStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 20, dProjectedCosts);
+
+                //
+                // ESTIMATED JOB COSTS - Orginal estimate for the job
+                //
+                oSLDocument.SetCellStyle(iCurrentRow, 21, oBoldPositiveCurrencyStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 21, oJob.EstTotalCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 22, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 22, oJob.EstMaterialCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 23, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 23, oJob.EstLaborCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 24, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 24, oJob.EstBurdenCost);
+
+                oSLDocument.SetCellStyle(iCurrentRow, 25, oPositiveCurrencyNumberStyle);
+                oSLDocument.SetCellValue(iCurrentRow, 25, oJob.EstSubcontractCost);
+
+                //
+                // DELTA - Estimated cost - (actual + remaining estimate)
+                //
+                decimal dTotalDelta = oJob.EstTotalCost - dProjectedCosts;
+                if (dTotalDelta < 0)
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 26, oBoldNegativeLightGrayCurrencyStyle);
+                }
+                else
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 26, oBoldPositiveLightGrayCurrencyStyle);
+                }
+                oSLDocument.SetCellValue(iCurrentRow, 26, dTotalDelta);
+
+                decimal dMaterialDelta = oJob.EstMaterialCost - (oJob.ActMaterialCost + oJob.RemainingMaterialsCostEstimated);
+                if (dMaterialDelta < 0)
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 27, oNegativeCurrencyNumberStyle);
+                }
+                else
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 27, oPositiveCurrencyNumberStyle);
+                }
+                oSLDocument.SetCellValue(iCurrentRow, 27, dMaterialDelta);
+
+                decimal dLaborDelta = oJob.EstLaborCost - (oJob.ActLaborCost + oJob.RemainingLaborCostEstimated);
+                if (dLaborDelta < 0)
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 28, oNegativeCurrencyNumberStyle);
+                }
+                else
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 28, oPositiveCurrencyNumberStyle);
+                }
+                oSLDocument.SetCellValue(iCurrentRow, 28, dLaborDelta);
+
+                decimal dBurdenDelta = oJob.EstBurdenCost - (oJob.ActBurdenCost + oJob.RemainingBurdenCostEstimated);
+                if (dBurdenDelta < 0)
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 29, oNegativeCurrencyNumberStyle);
+                }
+                else
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 29, oPositiveCurrencyNumberStyle);
+                }
+                oSLDocument.SetCellValue(iCurrentRow, 29, dBurdenDelta);
+
+                decimal dSubcontractDelta = oJob.EstSubcontractCost - (oJob.ActSubcontractCost + oJob.RemainingSubcontractCostEstimated);
+                if (dSubcontractDelta < 0)
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 30, oNegativeCurrencyNumberStyle);
+                }
+                else
+                {
+                    oSLDocument.SetCellStyle(iCurrentRow, 30, oPositiveCurrencyNumberStyle);
+                }
+                oSLDocument.SetCellValue(iCurrentRow, 30, dSubcontractDelta);
+
+                iCurrentRow++;
+            }
+
+            // save off the excel spreadsheet
+            oSLDocument.SaveAs(sDestinationFileName);
+
+            // email customer the statement
+            List<string> oToAddresses = new List<string>();
+            oToAddresses.Add(HSUser.SPINCRAFT_ROOT_USER);
+
+            List<string> oAttachments = new List<string>();
+            if (File.Exists(sDestinationFileName) == true)
+            {
+                oAttachments.Add(sDestinationFileName);
+            }
+
+            if ((oRequestingUser != null) && (File.Exists(sDestinationFileName) == true))
+            {
+                // we are emailing the file to a user of Epicor
+                oToAddresses.Add(oRequestingUser.Email);
+                HSEmailHelper.SendEmail(oToAddresses, m_sCompany + "-Project Tracker For Jobs ", "Project Tracker For Jobs", oAttachments);
+            }
+        }
+        #endregion
+
+        #region Properties
+        #endregion
+
+        #region Data Members
+
+        private HSValidateParts m_oValidateParts = new HSValidateParts();
+        private BOMSupport m_oBOMSupport;
+
+        private List<JobMaterial> m_oJobMaterials = new List<JobMaterial>();
+        private List<JobOperation> m_oJobOperations = new List<JobOperation>();
+        private List<JobOpsEstVsActualCosts> m_oJobOpsEstVsActualCosts = new List<JobOpsEstVsActualCosts>();
+        private List<JobEstVsActualCostsQty> m_oJobEstVsActualCostsQtys = new List<JobEstVsActualCostsQty>();
+
+        Dictionary<string, List<JobMaterial>> m_oFastJobMaterials = new Dictionary<string, List<JobMaterial>>();
+        Dictionary<string, List<JobOperation>> m_oFastJobOperations = new Dictionary<string, List<JobOperation>>();
+        Dictionary<string, List<JobOpsEstVsActualCosts>> m_oFastJobOperationCosts = new Dictionary<string, List<JobOpsEstVsActualCosts>>();
+        Dictionary<string, JobEstVsActualCostsQty> m_oFastJobEstVsActualCosts = new Dictionary<string, JobEstVsActualCostsQty>();
+
+        private string m_sCompany;
+        private string m_sPartNum;
+        private List<string> m_oJobNums;
+        private List<HSJob> m_oAllJobs = new List<HSJob>();
+
+        private List<string> m_oPartClassesToIgnore = new List<string>();
+
+        #endregion
+
+    }
+
     public class HSJobValidation
     {
         #region constructors
@@ -9102,7 +9772,7 @@ namespace HorizonScientific
             {
                 List<JobMaterial> oTmpMaterials = oTmp.AllMaterials.Where(OItem => OItem.IssuedComplete == false).ToList();
                 List<JobOperation> oTmpOperations = oTmp.AllOperations.Where(oItem => oItem.OpComplete == false).ToList();
-                if ( (oTmpMaterials.Count > 0) || (oTmpOperations.Count > 0) )
+                if ((oTmpMaterials.Count > 0) || (oTmpOperations.Count > 0))
                 {
                     oQtyCompleteButOperationsOpen.Add(oTmp);
                 }
@@ -9232,7 +9902,7 @@ namespace HorizonScientific
             #region Material Attributes
 
             // jobs where the material qty should not be zero
-            List< JobMaterial> oMaterialsWithZeroQty = m_oJobMaterials.Where(oItem => (oItem.RequiredQty == 0) && (oItem.QtyBearing == true) && ((oItem.PartMaster == null) || (m_oPartClassesToIgnore.Contains(oItem.PartMaster.ClassID) == false))).ToList();
+            List<JobMaterial> oMaterialsWithZeroQty = m_oJobMaterials.Where(oItem => (oItem.RequiredQty == 0) && (oItem.QtyBearing == true) && ((oItem.PartMaster == null) || (m_oPartClassesToIgnore.Contains(oItem.PartMaster.ClassID) == false))).ToList();
             if (oMaterialsWithZeroQty.Count > 0)
             {
                 // sort these by job number

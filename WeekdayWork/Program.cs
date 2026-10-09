@@ -92,6 +92,7 @@ namespace HorizonScientific
                 string sEmployeeId = "";
                 bool bCompletePriorOperations = false;
 
+                bool bGenerateProjectTrackerForJobs = false;
                 bool bLoadAssociatedJobs = false;
 
                 bool bCheckIfOperationBeStarted = false;
@@ -112,7 +113,6 @@ namespace HorizonScientific
 
                 bool bValidateSalesOrders = false;
                 bool bValidateJobs = false;
-                bool bFirmJobs = false;
                 bool bValidatePurchaseOrders = false;
                 bool bValidatePOReceipts = false;
 
@@ -524,6 +524,10 @@ namespace HorizonScientific
                         {
                             bCalcuateInventoryAge = true;
                         }
+                        else if (string.Compare(sArg, "GENERATE_PROJECT_TRACKER_FOR_JOBS", true) == 0)
+                        {
+                            bGenerateProjectTrackerForJobs = true;
+                        }
                     }
                 }
 
@@ -532,7 +536,7 @@ namespace HorizonScientific
                     // tasks we perform when kicked off from the task scheduler
                     bValidateSalesOrders = true;
                     bValidateJobs = true;
-                    bFirmJobs = true;
+                    bGenerateProjectTrackerForJobs = true;
                     bCheckIfOperationBeStarted = false;
                     bLoadAssociatedJobs = false;
                     bCompletePriorOperations = false;
@@ -625,6 +629,7 @@ namespace HorizonScientific
                             Console.WriteLine("Job: " + sJobNum + " Asm: " + iAssemblySequence.ToString() + " Opr: " + iOperationSequence.ToString() + " can be started.");
                         }
                     }
+                    
                     if (bCompletePriorOperations == true)
                     {
                         //sJobNum = "000023426";
@@ -707,20 +712,6 @@ namespace HorizonScientific
                         catch (Exception ex)
                         {
                             ReportException(ex, "Validate Jobs");
-                        }
-                    }
-
-                    if ((bFirmJobs == true) && (string.Compare(sCompany, CompanyConfiguration.SPINCRAFT_MA_COMPANY_ID, true) == 0))
-                    {
-                        // Spincraft MA wants all unfirm job suggestions to become firm
-                        HSFixUnfirmJobs oFixUnfirmJobs = new HSFixUnfirmJobs(AppSession);
-                        try
-                        {
-                            oFixUnfirmJobs.FirmJobs(AppSession);
-                        }
-                        catch (Exception ex)
-                        {
-                            ReportException(ex, "Firm Jobs");
                         }
                     }
 
@@ -961,6 +952,31 @@ namespace HorizonScientific
                             {
                                 oJobEstimateValidator.PerformJobSummary(sCompany, TEMP_FILE_DIRECTORY, oRequestingUser);
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            ReportException(ex, "Job Estimate Validation");
+                        }
+                    }
+
+                    if (bGenerateProjectTrackerForJobs == true)
+                    {
+                        try
+                        {
+                            //sJobNum = "31118-TEST";
+                            //sPartNum = "2085FASP";
+
+                            if (oValidateParts == null)
+                            {
+                                oValidateParts = new HSValidateParts();
+                                oValidateParts.Initialize(AppSession);
+                            }
+
+                            // load the materials and operations for all open jobs
+                            HSProjectTrackerForJobs oProjectTrackerForJobs = new HSProjectTrackerForJobs(sCompany);
+
+                            oProjectTrackerForJobs.Initialize(AppSession, oValidateParts, sJobNum, sPartNum);
+                            oProjectTrackerForJobs.GenerateProjectTrackerForJobs(TEMPLATES_FILE_DIRECTORY, TEMP_FILE_DIRECTORY, oRequestingUser);
                         }
                         catch (Exception ex)
                         {

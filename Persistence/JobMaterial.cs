@@ -246,6 +246,7 @@ namespace HorizonScientific
             }
 
             m_dEstRemainingCost = (1 - m_dPercentComplete) * m_dEstTotalCost;
+            m_dEstRemainingCostMaterial = (1 - m_dPercentComplete) * m_dEstMtlUnitCost * m_dRequiredQty;
         }
 
         #endregion
@@ -483,6 +484,11 @@ namespace HorizonScientific
             get { return m_dEstRemainingCost; }
             set { m_dEstRemainingCost = value; }
         }
+        public decimal EstRemainingCostMaterial
+        {
+            get { return m_dEstRemainingCostMaterial; }
+            set { m_dEstRemainingCostMaterial = value; }
+        }
         public decimal PercentComplete
         {
             get { return m_dPercentComplete; }
@@ -549,6 +555,7 @@ namespace HorizonScientific
         private HSPartData m_oPartMaster;
         private decimal m_dEstTotalCost;
         private decimal m_dEstRemainingCost;
+        private decimal m_dEstRemainingCostMaterial;
         private decimal m_dPercentComplete;
 
         private bool m_bUsedActualsForMissingEstimate;

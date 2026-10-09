@@ -51,6 +51,9 @@ namespace HorizonScientific
             // a no op is always complete
             m_bOpComplete = true;
             m_dEstimatedRemainingCost = 0M;
+            m_dEstimatedRemainingSubCost = 0M;
+            m_dEstimatedRemainingBurCost = 0M;
+            m_dEstimatedRemainingLaborCost = 0M;
         }
 
         public JobOpsEstVsActualCosts(DataRow oRow, bool bAccepActualsForMissingEstimates)
@@ -202,6 +205,9 @@ namespace HorizonScientific
             }
 
             m_dEstimatedRemainingCost = (1 - m_dPercentComplete) * EstCost;
+            m_dEstimatedRemainingSubCost = (1 - m_dPercentComplete) * EstSubCost;
+            m_dEstimatedRemainingBurCost = (1 - m_dPercentComplete) * EstBurCost;
+            m_dEstimatedRemainingLaborCost = (1 - m_dPercentComplete) * EstLaborCost;
         }
         #endregion
 
@@ -375,6 +381,21 @@ namespace HorizonScientific
             get { return m_dEstimatedRemainingCost;  }
             set { m_dEstimatedRemainingCost = value; }
         }
+        public decimal EstimatedRemainingSubCost
+        {
+            get { return m_dEstimatedRemainingSubCost;  }
+            set { m_dEstimatedRemainingSubCost = value; }
+        }
+        public decimal EstimatedRemainingBurCost
+        {
+            get { return m_dEstimatedRemainingBurCost;  }
+            set { m_dEstimatedRemainingBurCost = value; }
+        }
+        public decimal EstimatedRemainingLaborCost
+        {
+            get { return m_dEstimatedRemainingLaborCost;  }
+            set { m_dEstimatedRemainingLaborCost = value; }
+        }
         public decimal PercentComplete
         {
             get { return m_dPercentComplete; }
@@ -421,6 +442,10 @@ namespace HorizonScientific
 
         private bool m_bNoOp;
         private decimal m_dEstimatedRemainingCost;
+        private decimal m_dEstimatedRemainingSubCost;
+        private decimal m_dEstimatedRemainingBurCost;
+        private decimal m_dEstimatedRemainingLaborCost;
+
         private decimal m_dPercentComplete;
         private bool m_bUsedActualsForMissingEstimate;
         #endregion
