@@ -139,9 +139,9 @@ namespace EpicorIntegrationService
         public static string g_sSpincraftWIConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftWILive\config\SpincraftWILiveSSO.sysconfig";
         public static string g_sSpincraftCAConfiguration = @"E:\Epicor\ERP11\LocalClients\SpincraftCALive\config\SpincraftCALiveSSO.sysconfig";
 
-        private static string TEMP_FILE_DIRECTORY = @"E:\Epicor\ERP11\Spincraft\TempFiles\";
+        private static string TEMP_FILE_DIRECTORY = @"C:\Epicor\Spincraft\TempFiles\";
         private static string UPLOAD_FILE_DIRECTORY = @"\\ETUS25AN-AP0001\UploadedFiles\";
         private static string ARCHIVE_FILE_DIRECTORY = @"\\ETUS25AN-AP0001\UploadedFiles\Archived\";
-        private static string TEMPLATES_FILE_DIRECTORY = @"E:\Epicor\ERP11\Spincraft\Templates\";
+        private static string TEMPLATES_FILE_DIRECTORY = @"C:\Epicor\Spincraft\Templates\";
     }
 }
