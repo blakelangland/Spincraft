@@ -8536,6 +8536,10 @@ namespace HorizonScientific
             {
                 oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
             }
+            if (bIncludeClosedJobs == true)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("IncludeClosedJobs", bIncludeClosedJobs.ToString(), "bit", false, Guid.NewGuid(), "A");
+            }
             oQueryExecutionDataSet.AcceptChanges();
             oDataSet = oDynamicQuery.ExecuteByID(sQueryID, oQueryExecutionDataSet);
             foreach (DataRow oRow in oDataSet.Tables[0].Rows)
