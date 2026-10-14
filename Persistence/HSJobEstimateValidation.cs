@@ -8348,6 +8348,22 @@ namespace HorizonScientific
         #region Methods
         public void Initialize(Session oSession, HSValidateParts oValidateParts, string sJobNum, string sPartNum)
         {
+            bool bIncludeClosedJobs = false;
+            // if a job number or part number is passed in, we will include closed jobs in the analysis
+            if ((string.IsNullOrEmpty(sJobNum) == false) || (string.IsNullOrEmpty(sPartNum) == false))
+            {
+                bIncludeClosedJobs = true;
+            }
+
+            bool bPartNumWildCard = false;
+            if (string.IsNullOrEmpty(sPartNum) == false)
+            {
+                if (sPartNum.Contains("*") == true)
+                {
+                    bPartNumWildCard = true;
+                }
+            }   
+
             // loading all parts from the part master
             if (oValidateParts == null)
             {
@@ -8376,9 +8392,14 @@ namespace HorizonScientific
             }
 
             // get a list of all materials for open jobs
+            string sQueryID = BAQConstants.QUERY_LIST_ALL_JOB_MATERIALS;
+            if (bPartNumWildCard == true)
+            {
+                sQueryID = BAQConstants.QUERY_LIST_ALL_JOB_MATERIALS_WILDCARD;
+            }
             m_oJobMaterials.Clear();
             Ice.Proxy.BO.DynamicQueryImpl oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
-            QueryExecutionDataSet oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_LIST_ALL_JOB_MATERIALS);
+            QueryExecutionDataSet oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(sQueryID);
             oQueryExecutionDataSet.Clear();
             if (string.IsNullOrEmpty(sJobNum) == false)
             {
@@ -8388,8 +8409,13 @@ namespace HorizonScientific
             {
                 oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
             }
+            if (bIncludeClosedJobs == true)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("IncludeClosedJobs", bIncludeClosedJobs.ToString(), "bit", false, Guid.NewGuid(), "A");
+            }
+
             oQueryExecutionDataSet.AcceptChanges();
-            DataSet oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_LIST_ALL_JOB_MATERIALS, oQueryExecutionDataSet);
+            DataSet oDataSet = oDynamicQuery.ExecuteByID(sQueryID, oQueryExecutionDataSet);
             foreach (DataRow oRow in oDataSet.Tables[0].Rows)
             {
                 JobMaterial oJobMaterial = new JobMaterial(oRow, m_oValidateParts, false);
@@ -8408,9 +8434,14 @@ namespace HorizonScientific
                 oTmpJobMaterials.Add(oJobMaterial);
             }
 
+            sQueryID = BAQConstants.QUERY_LIST_ALL_JOB_OPERATIONS;
+            if (bPartNumWildCard == true)
+            {
+                sQueryID = BAQConstants.QUERY_LIST_ALL_JOB_OPERATIONS_WILDCARD;
+            }
             m_oJobOperations.Clear();
             oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
-            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_LIST_ALL_JOB_OPERATIONS);
+            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(sQueryID);
             oQueryExecutionDataSet.Clear();
             if (string.IsNullOrEmpty(sJobNum) == false)
             {
@@ -8420,8 +8451,12 @@ namespace HorizonScientific
             {
                 oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
             }
+            if (bIncludeClosedJobs == true)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("IncludeClosedJobs", bIncludeClosedJobs.ToString(), "bit", false, Guid.NewGuid(), "A");
+            }
             oQueryExecutionDataSet.AcceptChanges();
-            oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_LIST_ALL_JOB_OPERATIONS, oQueryExecutionDataSet);
+            oDataSet = oDynamicQuery.ExecuteByID(sQueryID, oQueryExecutionDataSet);
             foreach (DataRow oRow in oDataSet.Tables[0].Rows)
             {
                 JobOperation oJobOperation = new JobOperation(oRow);
@@ -8442,9 +8477,14 @@ namespace HorizonScientific
             }
 
             // pull in POC estimate vs actual costs for all open jobs
+            sQueryID = BAQConstants.QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS;
+            if (bPartNumWildCard == true)
+            {
+                sQueryID = BAQConstants.QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS_WILDCARD;
+            }
             m_oJobOpsEstVsActualCosts.Clear();
             oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
-            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS);
+            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(sQueryID);
             oQueryExecutionDataSet.Clear();
             if (string.IsNullOrEmpty(sJobNum) == false)
             {
@@ -8454,8 +8494,12 @@ namespace HorizonScientific
             {
                 oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
             }
+            if (bIncludeClosedJobs == true)
+            {
+                oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("IncludeClosedJobs", bIncludeClosedJobs.ToString(), "bit", false, Guid.NewGuid(), "A");
+            }
             oQueryExecutionDataSet.AcceptChanges();
-            oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS, oQueryExecutionDataSet);
+            oDataSet = oDynamicQuery.ExecuteByID(sQueryID, oQueryExecutionDataSet);
             foreach (DataRow oRow in oDataSet.Tables[0].Rows)
             {
                 JobOpsEstVsActualCosts oJobEstVsActualCosts = new JobOpsEstVsActualCosts(oRow, false);
@@ -8475,9 +8519,14 @@ namespace HorizonScientific
                 oTmpJobOperationCosts.Add(oJobEstVsActualCosts);
             }
 
+            sQueryID = BAQConstants.QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY;
+            if (bPartNumWildCard == true)
+            {
+                sQueryID = BAQConstants.QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY_WILDCARD;
+            }
             m_oJobEstVsActualCostsQtys.Clear();
             oDynamicQuery = WCFServiceSupport.CreateImpl<Ice.Proxy.BO.DynamicQueryImpl>(oSession, Ice.Proxy.BO.DynamicQueryImpl.UriPath);
-            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(BAQConstants.QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY);
+            oQueryExecutionDataSet = oDynamicQuery.GetQueryExecutionParametersByID(sQueryID);
             oQueryExecutionDataSet.Clear();
             if (string.IsNullOrEmpty(sJobNum) == false)
             {
@@ -8488,7 +8537,7 @@ namespace HorizonScientific
                 oQueryExecutionDataSet.ExecutionParameter.AddExecutionParameterRow("PartNum", sPartNum, "nvarchar", false, Guid.NewGuid(), "A");
             }
             oQueryExecutionDataSet.AcceptChanges();
-            oDataSet = oDynamicQuery.ExecuteByID(BAQConstants.QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY, oQueryExecutionDataSet);
+            oDataSet = oDynamicQuery.ExecuteByID(sQueryID, oQueryExecutionDataSet);
             foreach (DataRow oRow in oDataSet.Tables[0].Rows)
             {
                 JobEstVsActualCostsQty oJobEstVsActualCostsQty = new JobEstVsActualCostsQty(oRow);

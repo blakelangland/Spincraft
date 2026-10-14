@@ -119,9 +119,13 @@ namespace HorizonScientific
         public static string QUERY_LIST_ALL_UNFIRM_JOBS = @"ListAllUnfirmJobs";
 
         public static string QUERY_LIST_ALL_JOB_MATERIALS = @"ListAllJobMaterials";
+        public static string QUERY_LIST_ALL_JOB_MATERIALS_WILDCARD = @"ListAllJobMaterialsWildcard";
         public static string QUERY_LIST_ALL_JOB_OPERATIONS = @"ListAllJobOperations";
+        public static string QUERY_LIST_ALL_JOB_OPERATIONS_WILDCARD = @"ListAllJobOperationsWildcard";
         public static string QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS = @"JobOpsEstVsActualCosts";
+        public static string QUERY_JOB_OPS_EST_VS_ACTUAL_COSTS_WILDCARD = @"JobOpsEstVsActualCostsWildcard";
         public static string QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY = @"JobEstVsActualCostsQty";
+        public static string QUERY_JOB_EST_VS_ACTUAL_COSTS_QTY_WILDCARD = @"JobEstVsActualCostsQtyWildcard";
 
         // used for validating open sales orders
         public static string QUERY_SALES_ORDER_BACKLOG = @"SalesOrderBacklog";

@@ -32,6 +32,7 @@ namespace HorizonScientific
         #region Constructors
         public JobOpsEstVsActualCosts(HSJob oJob, HSAssembly oParentAssembly)
         {
+            m_bJobClosed = oJob.JobClosed;
             m_sCompany = oParentAssembly.Company;
             m_sJobNum = oJob.JobNum;
             m_iOrderNum = oJob.OrderNum;
@@ -58,6 +59,10 @@ namespace HorizonScientific
 
         public JobOpsEstVsActualCosts(DataRow oRow, bool bAccepActualsForMissingEstimates)
         {
+            if (oRow["JobHead1_JobClosed"] != DBNull.Value)
+            {
+                m_bJobClosed = (bool)oRow["JobHead1_JobClosed"];
+            }
             if (oRow["JobOper_Company"] != DBNull.Value)
             {
                 m_sCompany = (string)oRow["JobOper_Company"];
@@ -215,6 +220,11 @@ namespace HorizonScientific
         #endregion
 
         #region Properties
+        public bool JobClosed
+        {
+            get { return m_bJobClosed; }
+            set { m_bJobClosed = value; }
+        }
         public string Company
         {
             get { return m_sCompany; }
@@ -409,6 +419,7 @@ namespace HorizonScientific
         #endregion
 
         #region Data Members
+        private bool m_bJobClosed;
         private string m_sCompany;
         private string m_sJobNum;
         private string m_sPartNum;

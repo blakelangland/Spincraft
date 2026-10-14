@@ -51,6 +51,10 @@ namespace HorizonScientific
 
         public JobOperation(DataRow oRow)
         {
+            if (oRow["JobHead_JobClosed"] != DBNull.Value)
+            {
+                m_bJobClosed = (bool)oRow["JobHead_JobClosed"];
+            }
             if (oRow["JobOpDtl_Company"] != DBNull.Value)
             {
                 m_sCompany = (string)oRow["JobOpDtl_Company"];
@@ -258,6 +262,11 @@ namespace HorizonScientific
         #endregion
 
         #region Properties
+        public bool JobClosed
+        {
+            get { return m_bJobClosed; }
+            set { m_bJobClosed = value; }
+        }
         public string Company
         {
             get { return m_sCompany; }
@@ -516,6 +525,7 @@ namespace HorizonScientific
         #endregion
 
         #region Data Members
+        private bool m_bJobClosed;
         private string m_sCompany;
         private string m_sJobNum;
         private string m_sParentPartNum;

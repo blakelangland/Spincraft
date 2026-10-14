@@ -33,6 +33,10 @@ namespace HorizonScientific
 
         public JobMaterial(DataRow oRow, HSValidateParts oAllParts, bool bAcceptActualsForMissingEstimates)
         {
+            if (oRow["JobHead_JobClosed"] != DBNull.Value)
+            {
+                m_bJobClosed = (bool)oRow["JobHead_JobClosed"];
+            }
             if (oRow["JobMtl_Company"] != DBNull.Value)
             {
                 m_sCompany = (string)oRow["JobMtl_Company"];
@@ -256,6 +260,11 @@ namespace HorizonScientific
 
         #region Properties
 
+        public bool JobClosed
+        {
+            get { return m_bJobClosed; }
+            set { m_bJobClosed = value; }
+        }
         public string Company
         {
             get { return m_sCompany; }
@@ -509,6 +518,7 @@ namespace HorizonScientific
 
         #region Data Members
 
+        private bool m_bJobClosed;
         private string m_sCompany;
         private string m_sJobNum;
         private string m_sParentPartNum;
