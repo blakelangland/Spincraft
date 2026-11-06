@@ -179,7 +179,7 @@ namespace Erp.Internal.EI
         private void buildInfo(List<Payment_Def.TmpElec> ttTmpElecRows)
         {
             string sBankName = "TD BANK"; // this is the comman name of the bank account tied to the ACH payments
-            string sCompanyName = "STANDEX SPINCRAFT CA"; // this is the name of the company that is sending the ACH payments
+            string sCompanyName = "STANDEX MCSTARLITE"; // this is the name of the company that is sending the ACH payments
             string sBankRoutingNum = "211370545"; // this is the rounting information routing field from the bank account tied to the ACH payments
             string sCompanyID = "1310596149"; // this is the rounting information ID field from the bank account tied to the ACH payments
                                  
